@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"hash/fnv"
 	"net/http"
 	"sync"
 )
@@ -44,7 +45,7 @@ func (d *DistributedKeyValueStore) Put(key, value string) {
 	// You may use consistent hashing or other partitioning techniques
 
 	// For simplicity, we'll use a round-robin approach here
-	node := d.getNextNode()
+	node := d.getNodeForKey(key)
 	node.mu.Lock()
 	defer node.mu.Unlock()
 	node.data[key] = value
@@ -58,7 +59,7 @@ func (d *DistributedKeyValueStore) Get(key string) (string, bool) {
 	// Implement logic to locate the correct node for key retrieval
 
 	// For simplicity, we'll use a round-robin approach here
-	node := d.getNextNode()
+	node := d.getNodeForKey(key)
 	node.mu.RLock()
 	defer node.mu.RUnlock()
 	value, ok := node.data[key]
@@ -73,7 +74,7 @@ func (d *DistributedKeyValueStore) Delete(key string) {
 	// Implement logic to locate the correct node for deletion
 
 	// For simplicity, we'll use a round-robin approach here
-	node := d.getNextNode()
+	node := d.getNodeForKey(key)
 	node.mu.Lock()
 	defer node.mu.Unlock()
 	delete(node.data, key)
@@ -97,14 +98,15 @@ func (d *DistributedKeyValueStore) Replicate(newNode *Node) {
 	d.nodes = append(d.nodes, newNode)
 }
 
-// getNextNode selects the next node in a round-robin fashion
-func (d *DistributedKeyValueStore) getNextNode() *Node {
-	if len(d.nodes) == 0 {
-		return nil
-	}
-
-	// Implement a round-robin or more sophisticated node selection logic here
-	return d.nodes[0]
+// getNodeForKey selects the next node in a round-robin fashion
+func (d *DistributedKeyValueStore) getNodeForKey(key string) *Node {
+	// Use a hash function to generate a hash value from the key
+	hash := fnv.New32a()
+	hash.Write([]byte(key))
+	hashValue := hash.Sum32()
+	// Find the node responsible for the hash value
+	index := int(hashValue) % len(d.nodes)
+	return d.nodes[index]
 }
 
 // HandlePutRequest handles PUT requests to store key-value pairs.
@@ -163,7 +165,7 @@ func main() {
 	http.HandleFunc("/get", HandleGetRequest(distributedStore))
 	http.HandleFunc("/delete", HandleDeleteRequest(distributedStore))
 
-	if err := http.ListenAndServe(":8082", nil); err != nil {
+	if err := http.ListenAndServe(":8081", nil); err != nil {
 		fmt.Println(err)
 	}
 }
