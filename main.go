@@ -155,15 +155,26 @@ func HandleDeleteRequest(kv *DistributedKeyValueStore) http.HandlerFunc {
 	}
 }
 
+// HandleReplicateRequest handles replicate requests to store all data in new node.
+func HandleReplicateRequest(kv *DistributedKeyValueStore) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		newNode := NewNode()
+		kv.Replicate(newNode)
+		w.WriteHeader(http.StatusNoContent)
+	}
+}
+
 func main() {
 	distributedStore := NewDistributedKeyValueStore()
 	node1 := NewNode()
 	node2 := NewNode()
-	distributedStore.nodes = append(distributedStore.nodes, node1, node2)
+	node3 := NewNode()
+	distributedStore.nodes = append(distributedStore.nodes, node1, node2, node3)
 
 	http.HandleFunc("/put", HandlePutRequest(distributedStore))
 	http.HandleFunc("/get", HandleGetRequest(distributedStore))
 	http.HandleFunc("/delete", HandleDeleteRequest(distributedStore))
+	http.HandleFunc("/replicate", HandleReplicateRequest(distributedStore))
 
 	if err := http.ListenAndServe(":8081", nil); err != nil {
 		fmt.Println(err)
