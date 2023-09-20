@@ -90,3 +90,30 @@ func TestKeyValueStore(t *testing.T) {
 	}
 
 }
+
+func TestGet(t *testing.T) {
+	distributedStore := NewDistributedKeyValueStore()
+	node1 := NewNode()
+	distributedStore.nodes = append(distributedStore.nodes, node1)
+
+	distributedStore.nodes[0].data["key1"] = "value1"
+	value, _ := distributedStore.Get("key1")
+
+	if value != "value1" {
+		t.Errorf("Value %s is expected but got %s", "value1", value)
+	}
+
+}
+
+func TestPut(t *testing.T) {
+	distributedStore := NewDistributedKeyValueStore()
+	node1 := NewNode()
+	distributedStore.nodes = append(distributedStore.nodes, node1)
+
+	value, _ := distributedStore.Put("key1", "value1")
+
+	if value != "value1" {
+		t.Errorf("Value %s is expected but got %s", "value1", value)
+	}
+
+}
