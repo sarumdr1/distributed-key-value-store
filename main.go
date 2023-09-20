@@ -2,8 +2,8 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"hash/fnv"
+	"log"
 	"net/http"
 	"sync"
 )
@@ -121,8 +121,8 @@ func HandlePutRequest(kv *DistributedKeyValueStore) http.HandlerFunc {
 			http.Error(w, "Invalid JSON", http.StatusBadRequest)
 			return
 		}
-
 		kv.Put(request.Key, request.Value)
+
 		w.WriteHeader(http.StatusNoContent)
 	}
 }
@@ -177,6 +177,7 @@ func main() {
 	http.HandleFunc("/replicate", HandleReplicateRequest(distributedStore))
 
 	if err := http.ListenAndServe(":8081", nil); err != nil {
-		fmt.Println(err)
+		log.Fatal(err)
+
 	}
 }
