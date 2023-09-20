@@ -37,18 +37,17 @@ func NewDistributedKeyValueStore() *DistributedKeyValueStore {
 }
 
 // Put stores a key-value pair in the distributed key-value store
-func (d *DistributedKeyValueStore) Put(key, value string) {
+func (d *DistributedKeyValueStore) Put(key, value string) (string, bool) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
-	// Implement logic to distribute the data across nodes
-	// You may use consistent hashing or other partitioning techniques
-
-	// For simplicity, we'll use a round-robin approach here
 	node := d.getNodeForKey(key)
 	node.mu.Lock()
 	defer node.mu.Unlock()
 	node.data[key] = value
+	value, ok := node.data[key]
+	return value, ok
+
 }
 
 // Get retrieves the value associated with a key from the distributed key-value store
@@ -56,12 +55,10 @@ func (d *DistributedKeyValueStore) Get(key string) (string, bool) {
 	d.mu.RLock()
 	defer d.mu.RUnlock()
 
-	// Implement logic to locate the correct node for key retrieval
-
-	// For simplicity, we'll use a round-robin approach here
 	node := d.getNodeForKey(key)
 	node.mu.RLock()
 	defer node.mu.RUnlock()
+
 	value, ok := node.data[key]
 	return value, ok
 }
@@ -71,9 +68,6 @@ func (d *DistributedKeyValueStore) Delete(key string) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
-	// Implement logic to locate the correct node for deletion
-
-	// For simplicity, we'll use a round-robin approach here
 	node := d.getNodeForKey(key)
 	node.mu.Lock()
 	defer node.mu.Unlock()
@@ -150,6 +144,12 @@ func HandleGetRequest(kv *DistributedKeyValueStore) http.HandlerFunc {
 func HandleDeleteRequest(kv *DistributedKeyValueStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		key := r.URL.Query().Get("key")
+		_, exists := kv.Get(key)
+		if !exists {
+			http.Error(w, "Key not found", http.StatusNotFound)
+			return
+		}
+
 		kv.Delete(key)
 		w.WriteHeader(http.StatusNoContent)
 	}
