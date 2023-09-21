@@ -8,8 +8,10 @@ To use the key-value store service, follow the instructions below:
 
 ### Prerequisites
 Before you begin, make sure you have the following installed on your system:
+go
 
-curl: Command-line tool for making HTTP requests. You can download it.
+Check go version 
+go version
 
 ### Installation
 1. Clone the repository or download the source code of the key-value store service to your local machine.
@@ -19,35 +21,37 @@ curl: Command-line tool for making HTTP requests. You can download it.
 3. Run the key-value store service:
 go run main.go
 
-This will start the service on http://localhost:8081.
-
+This will start the service and ask for the options
+Select an option:
+1. Put
+2. Get
+3. Delete
+4. Replicate
+5. Quit
+   
 ### Usage
 1. Put
-To add a key-value pair to the store, use the following curl command:
-
-curl -X POST -d '{"key": "name", "value": "Alice"}' http://localhost:8081/put
+To add a key-value pair to the store, choose option 1
+Enter key: name
+Enter value:Alice
 
 Replace "name" with your desired key.
 Replace "Alice" with your desired value.
 
-2. Get
-To retrieve a value associated with a specific key, use the following curl command:
+3. Get
+To retrieve a value associated with a specific key, choose option 2
 
-curl http://localhost:8081/get?key=name
-
+Enter key: name
 Replace "name" with the key you want to retrieve.
 
 3. Delete
-To delete a key-value pair from the store, use the following curl command:
+To delete a key-value pair from the store,choose option 3
 
 curl -X DELETE http://localhost:8081/delete?key=name
-
 Replace "name" with the key you want to delete.
 
 4. Replication
-To replicate data or perform other operations related to replication, use the following curl command:
-
-curl http://localhost:8081/replicate
+To replicate data or perform other operations related to replication, choose option 4
 
 
 ### Testing
