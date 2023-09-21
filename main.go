@@ -1,10 +1,11 @@
 package main
 
 import (
-	"encoding/json"
+	"bufio"
+	"fmt"
 	"hash/fnv"
 	"log"
-	"net/http"
+	"os"
 	"sync"
 )
 
@@ -103,81 +104,99 @@ func (d *DistributedKeyValueStore) getNodeForKey(key string) *Node {
 	return d.nodes[index]
 }
 
-// HandlePutRequest handles PUT requests to store key-value pairs.
-func HandlePutRequest(kv *DistributedKeyValueStore) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		var request struct {
-			Key   string `json:"key"`
-			Value string `json:"value"`
-		}
-
-		if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
-			http.Error(w, "Invalid JSON", http.StatusBadRequest)
-			return
-		}
-		kv.Put(request.Key, request.Value)
-
-		w.WriteHeader(http.StatusNoContent)
-	}
-}
-
-// HandleGetRequest handles GET requests to retrieve values by key.
-func HandleGetRequest(kv *DistributedKeyValueStore) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		key := r.URL.Query().Get("key")
-		value, exists := kv.Get(key)
-		if !exists {
-			http.Error(w, "Key not found", http.StatusNotFound)
-			return
-		}
-
-		response := struct {
-			Value string `json:"value"`
-		}{Value: value}
-
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
-	}
-}
-
-// HandleDeleteRequest handles DELETE requests to remove key-value pairs.
-func HandleDeleteRequest(kv *DistributedKeyValueStore) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		key := r.URL.Query().Get("key")
-		_, exists := kv.Get(key)
-		if !exists {
-			http.Error(w, "Key not found", http.StatusNotFound)
-			return
-		}
-
-		kv.Delete(key)
-		w.WriteHeader(http.StatusNoContent)
-	}
-}
-
-// HandleReplicateRequest handles replicate requests to store all data in new node.
-func HandleReplicateRequest(kv *DistributedKeyValueStore) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		newNode := NewNode()
-		kv.Replicate(newNode)
-		w.WriteHeader(http.StatusNoContent)
-	}
-}
-
 func main() {
 	distributedStore := NewDistributedKeyValueStore()
 	node1 := NewNode()
 	node2 := NewNode()
 	node3 := NewNode()
 	distributedStore.nodes = append(distributedStore.nodes, node1, node2, node3)
+	for {
+		fmt.Println("Select an option:")
+		fmt.Println("1. Put")
+		fmt.Println("2. Get")
+		fmt.Println("3. Delete")
+		fmt.Println("4. Replicate")
+		fmt.Println("5. Quit")
 
-	http.HandleFunc("/put", HandlePutRequest(distributedStore))
-	http.HandleFunc("/get", HandleGetRequest(distributedStore))
-	http.HandleFunc("/delete", HandleDeleteRequest(distributedStore))
-	http.HandleFunc("/replicate", HandleReplicateRequest(distributedStore))
+		var choice int
 
-	if err := http.ListenAndServe(":8081", nil); err != nil {
-		log.Fatal(err)
+		_, err := fmt.Scan(&choice)
 
+		if err != nil {
+			fmt.Println("Invalid input. Please enter a number between 1 and 5.")
+			continue
+		}
+
+		switch choice {
+		case 1:
+			fmt.Println("You selected Option Put. Running code for Option 1...")
+			reader := bufio.NewReader(os.Stdin)
+
+			fmt.Print("Enter key: ")
+			key, err := reader.ReadString('\n')
+			if err != nil {
+				log.Fatalf("Error reading data: %s\n", err)
+			}
+			fmt.Print("Enter Value: ")
+
+			value, errValue := reader.ReadString('\n')
+			if errValue != nil {
+				log.Fatalf("Error reading data: %s\n", errValue)
+			}
+			_, ok := distributedStore.Put(key, value)
+			if !ok {
+				log.Fatalf("Error while Put")
+			}
+			break
+
+		case 2:
+			fmt.Println("You selected Option Get. Running code for Option 2...")
+			reader := bufio.NewReader(os.Stdin)
+
+			fmt.Print("Enter key: ")
+			key, err := reader.ReadString('\n')
+			if err != nil {
+				log.Fatalf("Error reading data: %s\n", err)
+			}
+			value, exists := distributedStore.Get(key)
+			if !exists {
+				log.Fatalf("Key not found")
+				return
+			}
+
+			response := struct {
+				Key   string `json:"key"`
+				Value string `json:"value"`
+			}{Key: key, Value: value}
+
+			fmt.Printf("%s:%s", response.Key, response.Value)
+			break
+
+		case 3:
+			fmt.Println("You selected Option Delete. Running code for Option 3...")
+			reader := bufio.NewReader(os.Stdin)
+
+			fmt.Print("Enter key: ")
+			key, err := reader.ReadString('\n')
+			if err != nil {
+				log.Fatalf("Error reading data: %s\n", err)
+			}
+			distributedStore.Delete(key)
+			break
+
+		case 4:
+			fmt.Println("You selected Option Replicate. Running code for Option 4...")
+			newNode := NewNode()
+			distributedStore.Replicate(newNode)
+			fmt.Println("New Node data:", newNode.data)
+			break
+
+		case 5:
+			fmt.Println("Exiting the program.")
+			os.Exit(0)
+			break
+		default:
+			fmt.Println("Invalid choice. Please select a valid option.")
+		}
 	}
 }
