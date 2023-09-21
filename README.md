@@ -38,7 +38,7 @@ Enter value:Alice
 Replace "name" with your desired key.
 Replace "Alice" with your desired value.
 
-3. Get
+2. Get
 To retrieve a value associated with a specific key, choose option 2
 
 Enter key: name
@@ -47,7 +47,7 @@ Replace "name" with the key you want to retrieve.
 3. Delete
 To delete a key-value pair from the store,choose option 3
 
-curl -X DELETE http://localhost:8081/delete?key=name
+Enter key: name
 Replace "name" with the key you want to delete.
 
 4. Replication
